@@ -25,28 +25,30 @@ const transporter = nodemailer.createTransport({
   });
 // Helper function to combine HTML and CSS
 const createEmailHTML = (template) => {
-  // Extract and process base64 images from template HTML
-  const processedHTML = template.html.replace(
-    /src="data:image\/([a-zA-Z]*);base64,([^"]*)"/g,
-    (match, imageType, base64Data) => {
-      // Create a unique filename for the image
-      const filename = `image_${Math.random().toString(36).substr(2, 9)}.${imageType}`;
-      
-      // Store the image data for attachment
-      if (!template.images) template.images = [];
-      template.images.push({
-        filename: filename,
-        path: `data:image/${imageType};base64,${base64Data}`,
-        cid: filename, // Content ID referenced in HTML
-        contentType: `image/${imageType}`,
-        contentTransferEncoding: 'base64',
-        contentDisposition: 'inline'
-      });
+  // Initialize images array if not exists
+  template.images = template.images || [];
 
-      // Replace base64 data with CID reference
-      return `src="cid:${filename}"`;
-    }
-  );
+  // Only process images if there are base64 images in the HTML
+  const processedHTML = template.html.includes('data:image') 
+    ? template.html.replace(
+        /src="data:image\/([a-zA-Z]*);base64,([^"]*)"/g,
+        (match, imageType, base64Data) => {
+          // Create a unique filename for the image
+          const filename = `image_${Math.random().toString(36).substr(2, 9)}.${imageType}`;
+          
+          template.images.push({
+            filename: filename,
+            path: `data:image/${imageType};base64,${base64Data}`,
+            cid: filename,
+            contentType: `image/${imageType}`,
+            contentTransferEncoding: 'base64',
+            contentDisposition: 'inline'
+          });
+
+          return `src="cid:${filename}"`;
+        }
+      )
+    : template.html;
 
   return `
     <!DOCTYPE html>
@@ -77,18 +79,20 @@ app.post('/api/send-campaign', async (req, res) => {
       to: emailGroup.emails,
       subject: template.subject,
       html: processedHTML,
-      attachments: template.images.map(img => ({
-        filename: img.filename,
-        path: img.path,
-        cid: img.filename,  
-        contentType: img.contentType,
-        contentTransferEncoding: 'base64',
-        contentDisposition: 'inline'
-      })),
-      headers: {
-        'MIME-Version': '1.0',
-        'Content-Type': 'multipart/mixed; boundary="mixed"'
-      }
+      ...(template.images.length > 0 && {
+        attachments: template.images.map(img => ({
+          filename: img.filename,
+          path: img.path,
+          cid: img.filename,  
+          contentType: img.contentType,
+          contentTransferEncoding: 'base64',
+          contentDisposition: 'inline'
+        })),
+        headers: {
+          'MIME-Version': '1.0',
+          'Content-Type': 'multipart/mixed; boundary="mixed"'
+        }
+      })
     };
   
     try {
