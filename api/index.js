@@ -3,7 +3,13 @@ const nodemailer = require('nodemailer');
 const cors = require('cors');
 
 const app = express();
-app.use(cors());
+
+
+const PORT = process.env.PORT || 3000;
+
+app.use(cors({
+    origin: '*'
+  }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
@@ -63,8 +69,6 @@ app.post('/api/send-campaign', async (req, res) => {
 
     // First create the processed HTML with embedded images
     const processedHTML = createEmailHTML(template);
-    console.log('Processed images:', template.images);
-    console.log('Processed HTML:', processedHTML.substring(0, 200) + '...'); // Log first 200 chars
 
     const mailOptions = {
       from: '"Email Campaign" <chopanm093@gmail.com>',
@@ -93,7 +97,14 @@ app.post('/api/send-campaign', async (req, res) => {
       res.status(500).json({ error: 'Failed to send emails' });
     }
 });
-  
-app.listen(3001, () => {
-    console.log('Server running on port 3001');
+
+app.get('/', (req, res) => {
+    res.send('Email Service is running');
 });
+  
+app.listen(PORT, () => {
+    console.log('Server running on port',PORT);
+});
+
+// Export the Express app
+module.exports = app;
