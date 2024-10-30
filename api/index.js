@@ -1,6 +1,7 @@
 const express = require('express');
 const nodemailer = require('nodemailer');
 const cors = require('cors');
+
 require('dotenv').config();
 
 const app = express();
@@ -18,8 +19,8 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-      user: process.env.EMAIL,
-      pass: process.env.PASSWORD,
+      user: process.env.GMAIL_USER,
+      pass: process.env.GMAIL_PASS,
     },
   });
 // Helper function to combine HTML and CSS
